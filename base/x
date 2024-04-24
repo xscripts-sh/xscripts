@@ -30,6 +30,11 @@ if [ "$REQUESTED_COMMAND" = "make" ]; then
   exit 0
 fi
 
+if [ "$REQUESTED_COMMAND" = "help" ]; then
+  print_help
+  exit 0
+fi
+
 # get the requested script from COMMANDS
 REQUESTED_SCRIPT=$(echo ${COMMANDS[@]} | tr ' ' '\n' | grep "$REQUESTED_COMMAND" | cut -d "=" -f 2)
 REQUESTED_SCRIPT_PATH="$XSCRIPTS_DIR/$REQUESTED_SCRIPT"
