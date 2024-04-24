@@ -1,0 +1,8 @@
+#!/bin/bash
+# Description: Check project dependencies
+# Meta: order=1
+
+prevent_running_inside_container
+
+check: "Has Docker Installed" has_docker_installed
+check: "Has Docker Compose Installed" has_docker_compose_installed

@@ -1,0 +1,200 @@
+#!/bin/bash
+# https://xscripts.sh - XScripts (Function Library)
+# Version: 0.1.0
+
+::load_libraries_and_commands() {
+  for file in $(find $XSCRIPTS_DIR -type f); do
+    root_file=${file#$XSCRIPTS_DIR/}
+    base_file=$(basename $root_file)
+
+    if [[ "$base_file" = "__xscripts" ]]; then continue; fi
+
+    if [[ "$base_file" == _* ]]; then
+      source $file
+    else
+      COMMANDS+=(${root_file//\//:}=$root_file)
+    fi
+  done
+}
+
+::make_command() {
+  if [ -z "$1" ]; then
+    print_error "Please provide a name for the command"
+    exit 1
+  fi
+
+  MAKE_SCRIPT_NAME=$1
+
+  if [ -f "$XSCRIPTS_DIR/$MAKE_SCRIPT_NAME" ]; then
+    print_error "Command already exists: $MAKE_SCRIPT_NAME"
+    exit 1
+  fi
+
+  echo "#!/bin/bash" > $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  echo "# Description: The $MAKE_SCRIPT_NAME script" >> $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  echo "# Meta: order=999" >> $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  echo "" >> $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  echo "$3" >> $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  chmod +x $XSCRIPTS_DIR/$MAKE_SCRIPT_NAME
+  echo "Command created: $MAKE_SCRIPT_NAME"
+  exit 0
+}
+
+print_help() {
+  echo "xScripts - Available scripts:"
+
+  declare -a TOP_COMMANDS
+  declare -a SUB_COMMANDS
+
+  for command in "${COMMANDS[@]}"; do
+    IFS='=' read -r -a parts <<< "$command"
+
+    description=$(awk '/^# Description: /{print $0}' $XSCRIPTS_DIR/${parts[1]} | sed 's/^# Description: //')
+    order=$(awk '/^# Meta: order=/{print $0}' $XSCRIPTS_DIR/${parts[1]} | sed 's/^# Meta: order=//')
+
+    if [[ ${parts[0]} == *":"* ]]; then
+      SUB_COMMANDS+=("$order;${parts[0]};$description")
+    else
+      TOP_COMMANDS+=("$order;${parts[0]};$description")
+    fi
+  done
+
+  IFS=$'\n' TOP_COMMANDS=($(sort <<<"${TOP_COMMANDS[*]}"))
+  IFS=$'\n' SUB_COMMANDS=($(sort <<<"${SUB_COMMANDS[*]}"))
+
+  for line in "${TOP_COMMANDS[@]}"; do
+    IFS=';' read -r -a parts <<< "$line"
+    printf "  %-20s %s\n" "${parts[1]}" "${parts[2]}"
+  done
+
+  echo ""
+
+  if ([ ${#SUB_COMMANDS[@]} -eq 0 ]); then
+    exit 0
+  fi
+
+  for line in "${SUB_COMMANDS[@]}"; do
+    IFS=';' read -r -a parts <<< "$line"
+    if [[ ${parts[1]} == *":"* ]]; then
+      printf "  %-20s %s\n" "${parts[1]}" "${parts[2]}"
+    fi
+  done
+
+  echo ""
+
+  exit 0
+}
+
+print_banner() {
+  # print a banner
+  tput setab 4
+  tput setaf 7
+  tput bold
+  printf "%0.s " $(seq 1 $(tput cols))
+  echo "xscript: $1"
+  tput sgr0
+}
+
+print_warning() {
+  # print a warning message
+  tput setab 3
+  tput setaf 0
+  tput bold
+  echo "xscript warning: $1"
+  tput sgr0
+}
+
+print_error() {
+  # print an error message
+  tput setab 1
+  tput setaf 7
+  tput bold
+  echo "xscript error: $1"
+  tput sgr0
+}
+
+parse_yaml() {
+  local prefix=$2
+  local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+  sed -ne "s|^\($s\):|\1|" \
+       -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+       -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p" "$1" |
+  awk -F$fs '{
+     indent = length($1)/2;
+     vname[indent] = $2;
+     for (i in vname) {if (i > indent) {delete vname[i]}}
+     if (length($3) > 0) {
+       vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+       printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+     }
+   }'
+}
+
+docker_compose_up_if_necessary() {
+  if [ "$IS_DOCKER_COMPOSE_ENVIRONMENT" = true ] && [ "$IS_INSIDE_DOCKER_CONTAINER" = false ]; then
+    docker compose up -d
+  fi
+}
+
+prevent_running_inside_container() {
+  if [ "$IS_INSIDE_DOCKER_CONTAINER" = true ]; then
+    print_warning "Cannot run '$REQUESTED_SCRIPT' inside a docker container"
+    exit 1
+  fi
+}
+
+docker_compose_run:() {
+  # is docker running?
+  if ! docker --version > /dev/null; then
+    print_error "Docker is not running"
+    exit 1
+  fi
+
+  # print the command that is going to be run
+  print_banner "docker compose exec $SERVICE_NAME $@'"
+  docker compose exec $SERVICE_NAME "$@"
+}
+
+shell_run:() {
+  # print the command that is going to be run
+  print_banner "$@"
+  sh -c "$*"
+}
+
+check:() {
+  # turn $2 into a yes or no
+  if $2; then
+    answer="yes"
+  else
+    answer="no"
+  fi
+
+  printf "  %-20s %s\n" "$1" "$answer"
+}
+
+has_docker_installed() {
+  docker_version=$(docker --version 2>&1)
+
+  if [[ $docker_version == *"Docker version"* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+has_docker_compose_installed() {
+  docker_compose_version=$(docker compose version 2>&1)
+
+  if [[ $docker_compose_version == *"Docker Compose version"* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+# dynamic run: function
+if [ "$IS_DOCKER_COMPOSE_ENVIRONMENT" = true ] && [ "$IS_INSIDE_DOCKER_CONTAINER" = false ]; then
+  run:() { docker_compose_run: $@; }
+else
+  run:() { shell_run: $@; }
+fi

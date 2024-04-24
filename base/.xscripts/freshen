@@ -1,0 +1,7 @@
+#!/bin/bash
+# Description: Freshen up the project's dependencies and data
+# Meta: order=3
+
+docker_compose_up_if_necessary
+
+# run: command_here

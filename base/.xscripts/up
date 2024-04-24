@@ -1,0 +1,7 @@
+#!/bin/bash
+# Description: Bring the project up
+# Meta: order=2
+
+docker_compose_up_if_necessary
+
+run: npm install --no-progress --quiet

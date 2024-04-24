@@ -1,0 +1,7 @@
+#!/bin/bash
+# Description: Open a console for the project
+# Meta: order=4
+
+prevent_running_inside_container
+
+run: docker compose exec $SERVICE_NAME bash
