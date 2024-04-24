@@ -4,4 +4,4 @@
 
 docker_compose_up_if_necessary
 
-run: npm install --no-progress --quiet
+# run: my-command
