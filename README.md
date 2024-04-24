@@ -22,7 +22,19 @@ TBD
 
 ## Usage
 
-TBD
+### Standard Commands
+
+- `x up` - Start the project
+- `x down` - Stop the project
+- `x freshen` - Freshen the project's dependencies
+- `x console` - Open a console in the project
+- `x check` - Check the project's dependencies
+
+### Creating New Commands
+
+```bash
+$ x make my-command
+```
 
 ## Todo
 
