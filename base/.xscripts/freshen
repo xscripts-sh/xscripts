@@ -2,6 +2,11 @@
 # Description: Freshen up the project's dependencies and data
 # Meta: order=3
 
+print_banner "Freshening up the project's dependencies and data..."
+
 docker_compose_up_if_necessary
 
-# run: command_here
+# run: composer install
+# run: npm install
+
+print_divider

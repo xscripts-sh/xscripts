@@ -2,6 +2,14 @@
 # Description: Bring the project up
 # Meta: order=2
 
-docker_compose_up_if_necessary
+prevent_running_inside_container
 
-# run: my-command
+print_banner "Bringing the project up..."
+
+docker_compose_up
+
+# if has_option "--fresh"; then
+#     run: composer install
+# fi
+
+print_divider

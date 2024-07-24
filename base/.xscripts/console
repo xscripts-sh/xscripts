@@ -1,7 +1,13 @@
 #!/bin/bash
-# Description: Open a console for the project
+# Description: Open a console
 # Meta: order=4
 
 prevent_running_inside_container
 
-run: docker compose exec $SERVICE_NAME bash
+print_banner "Opening a console..."
+
+docker_compose_up_if_necessary
+
+run: bash
+
+print_divider

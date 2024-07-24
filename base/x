@@ -1,6 +1,6 @@
 #!/bin/bash
 # https://xscripts.sh - XScripts To Rule Them All
-# Version: 0.1.0
+# Version: 0.1.1
 
 readonly XSCRIPTS_DIR="$(dirname "$0")/.xscripts"
 readonly IS_DOCKER_COMPOSE_ENVIRONMENT=$((test -f ./docker-compose.yml || test -f ./docker-compose.yaml) && echo true || echo false)
@@ -23,6 +23,7 @@ if [ -z "$1" ]; then
   exit 0
 fi
 
+ARGUMENTS=("$@")
 REQUESTED_COMMAND="$1"
 
 if [ "$REQUESTED_COMMAND" = "make" ]; then
@@ -40,7 +41,7 @@ REQUESTED_SCRIPT=$(echo ${COMMANDS[@]} | tr ' ' '\n' | grep "$REQUESTED_COMMAND"
 REQUESTED_SCRIPT_PATH="$XSCRIPTS_DIR/$REQUESTED_SCRIPT"
 
 if [ ! -f "$REQUESTED_SCRIPT_PATH" ]; then
-  echo "Script not found: $REQUESTED_SCRIPT_PATH"
+  print_warning "Script not found: $REQUESTED_SCRIPT_PATH"
   print_help
   exit 1
 fi

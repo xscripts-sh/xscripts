@@ -4,5 +4,9 @@
 
 prevent_running_inside_container
 
+print_banner "Checking environment..."
+
 check: "Has Docker Installed" has_docker_installed
 check: "Has Docker Compose Installed" has_docker_compose_installed
+
+print_divider

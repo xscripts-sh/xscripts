@@ -4,4 +4,8 @@
 
 prevent_running_inside_container
 
+print_banner "Bringing the project down..."
+
 shell_run: docker compose stop
+
+print_divider
